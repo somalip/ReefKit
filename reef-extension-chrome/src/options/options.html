@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reef — Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img class="sidebar-logo" src="reef-logo.png" alt="Reef">
+        <span class="sidebar-title">Reef</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#execution" class="nav-item active" data-section="execution">Execution</a>
+        <a href="#privacy" class="nav-item" data-section="privacy">Privacy &amp; Security</a>
+        <a href="#search" class="nav-item" data-section="search">Search</a>
+        <a href="#appearance" class="nav-item" data-section="appearance">Appearance</a>
+        <a href="#data" class="nav-item" data-section="data">Data Management</a>
+        <a href="#about" class="nav-item" data-section="about">About</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="main-header">
+        <h1 class="page-title">Settings</h1>
+        <div class="header-actions">
+          <button id="btn-export" class="btn btn-ghost" title="Export settings">Export</button>
+          <button id="btn-import" class="btn btn-ghost" title="Import settings">Import</button>
+          <button id="btn-save" class="btn btn-primary">Save Changes</button>
+        </div>
+      </header>
+
+      <div id="save-status" class="save-status hidden">Settings saved</div>
+
+      <!-- EXECUTION -->
+      <section id="section-execution" class="settings-section visible">
+        <div class="section-header">
+          <h2>Execution</h2>
+          <p class="section-desc">Control how Reef interacts with page elements.</p>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">
+            <span class="setting-name">Action mode</span>
+            <span class="setting-hint">Determines whether Reef can execute clicks and form submissions or only navigate to links.</span>
+          </div>
+          <div class="setting-control">
+            <div class="segmented-control" id="actions-mode-control">
+              <button class="seg-btn active" data-value="execute">Execute</button>
+              <button class="seg-btn" data-value="navigate-only">Navigate Only</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">
+            <span class="setting-name">Destructive action confirmation</span>
+            <span class="setting-hint">Require explicit confirmation before executing destructive actions (delete, remove, checkout, etc).</span>
+          </div>
+          <div class="setting-control">
+            <label class="toggle">
+              <input type="checkbox" id="confirm-destructive" checked>
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">
+            <span class="setting-name">Auto-execute on selection</span>
+            <span class="setting-hint">Automatically execute an action when selected from search results, instead of requiring a second click.</span>
+          </div>
+          <div class="setting-control">
+            <label class="toggle">
+              <input type="checkbox" id="auto-execute">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRIVACY & SECURITY -->
+      <section id="section-privacy" class="settings-section">
+        <div class="section-header">
+          <h2>Privacy &amp; Security</h2>
+          <p class="section-desc">Control what Reef can access and index.</p>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">
+            <span class="setting-name">Exclusion selectors</span>
+            <span class="setting-hint">CSS selectors for elements Reef must never index or interact with. Sensitive inputs (passwords, payment, SSN) are always excluded.</span>
+          </div>
+          <div class="setting-control">
+            <textarea id="exclusion-selectors" rows="3" placeholder=".no-agent, #private-area, [data-sensitive]" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">
+            <span class="setting-name">Blocked domains</span>
+            <span class="setting-hint">Domains where Reef will not activate. One per line.</span>
+          </div>
+          <div class="setting-control">
+            <textarea id="blocked-domains" rows="3" placeholder="example.com&#10;internal.corp.net" spellcheck="false"></textarea>
+          </div>
+        </div>
+
+        <!-- <div class="setting-group">
+          <div class="setting-label">
+            <span class="setting-name">Anonymous telemetry</span>
+            <span class="setting-hint">Send anonymous usage data to help improve Reef. No page content ever leaves your browser.</span>
+          </div>
+          <div class="setting-control">
+            <label class="toggle">
+              <input type="checkbox" id="telemetry-enabled">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+          </div>
+        </div> -->
+      </section>
+
+      <!-- SEARCH -->
+      <section id="section-search" class="settings-section">
+        <div class="section-header">
+          <h2>Search</h2>
+          <p class="section-desc">Configure search behavior and result display.</p>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">
+            <span class="setting-name">Default results per page</span>
+            <span class="setting-hint">Number of results shown before pagination.</span>
+          </div>
+          <div class="setting-control">
+            <div class="number-input">
+              <input type="number" id="page-size" min="5" max="100" step="5" value="20">
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">
+            <span class="setting-name">Scoring algorithm</span>
+            <span class="setting-hint">Algorithm used to rank search results.</span>
+          </div>
+          <div class="setting-control">
+            <div class="segmented-control" id="scoring-control">
+              <button class="seg-btn active" data-value="default">Default</button>
+              <button class="seg-btn" data-value="bm25">BM25</button>
+              <button class="seg-btn" data-value="bm25f">BM25F</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">
+            <span class="setting-name">Fuzzy matching</span>
+            <span class="setting-hint">Enable typo-tolerant search with Levenshtein distance.</span>
+          </div>
+          <div class="setting-control">
+            <label class="toggle">
+              <input type="checkbox" id="fuzzy-enabled" checked>
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">
+            <span class="setting-name">Result diversity (MMR)</span>
+            <span class="setting-hint">Diversify results using Maximal Marginal Relevance to avoid redundant entries.</span>
+          </div>
+          <div class="setting-control">
+            <label class="toggle">
+              <input type="checkbox" id="diversify-results">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">
+            <span class="setting-name">Cross-tab indexing</span>
+            <span class="setting-hint">Index pages from the same origin across multiple open tabs.</span>
+          </div>
+          <div class="setting-control">
+            <label class="toggle">
+              <input type="checkbox" id="enable-cross-tab-crawl">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- APPEARANCE -->
+      <section id="section-appearance" class="settings-section">
+        <div class="section-header">
+          <h2>Appearance</h2>
+          <p class="section-desc">Customize the look and feel of the extension UI.</p>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">
+            <span class="setting-name">Theme</span>
+            <span class="setting-hint">Choose a color theme for the popup and settings pages. System will follow your OS preference.</span>
+          </div>
+          <div class="setting-control">
+            <div class="segmented-control" id="theme-control">
+              <button class="seg-btn active" data-value="light">Light</button>
+              <button class="seg-btn" data-value="dark">Dark</button>
+              <button class="seg-btn" data-value="system">System</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">
+            <span class="setting-name">Compact mode</span>
+            <span class="setting-hint">Reduce spacing and font sizes for a denser information layout.</span>
+          </div>
+          <div class="setting-control">
+            <label class="toggle">
+              <input type="checkbox" id="compact-mode">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- DATA MANAGEMENT -->
+      <section id="section-data" class="settings-section">
+        <div class="section-header">
+          <h2>Data Management</h2>
+          <p class="section-desc">Manage cached indices and stored data.</p>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">
+            <span class="setting-name">Cached indices</span>
+            <span class="setting-hint">Clear all cached page indices. Pages will be re-indexed on next visit.</span>
+          </div>
+          <div class="setting-control">
+            <button id="btn-clear-cache" class="btn btn-outline">Clear Cache</button>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">
+            <span class="setting-name">Query history</span>
+            <span class="setting-hint">Clear all tracked search queries and popularity data.</span>
+          </div>
+          <div class="setting-control">
+            <button id="btn-clear-history" class="btn btn-outline">Clear History</button>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">
+            <span class="setting-name">Reset all settings</span>
+            <span class="setting-hint">Restore all settings to their default values. This cannot be undone.</span>
+          </div>
+          <div class="setting-control">
+            <button id="btn-reset" class="btn btn-danger">Reset to Defaults</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABOUT -->
+      <section id="section-about" class="settings-section">
+        <div class="section-header">
+          <h2>About</h2>
+          <p class="section-desc">Reef for Browsers — client-side search and browser agent layer.</p>
+        </div>
+
+        <div class="about-grid">
+          <div class="about-item">
+            <span class="about-key">Version</span>
+            <span class="about-value">0.1.0</span>
+          </div>
+          <div class="about-item">
+            <span class="about-key">Manifest</span>
+            <span class="about-value">V3</span>
+          </div>
+          <div class="about-item">
+            <span class="about-key">Runtime</span>
+            <span class="about-value">Service Worker</span>
+          </div>
+          <div class="about-item">
+            <span class="about-key">Spotlight shortcut</span>
+            <span class="about-value">Ctrl+Shift+L / Cmd+Shift+L</span>
+          </div>
+          <div class="about-item">
+            <span class="about-key">Popup shortcut</span>
+            <span class="about-value">Ctrl+Shift+R / Cmd+Shift+R</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

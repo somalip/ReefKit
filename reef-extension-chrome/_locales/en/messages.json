@@ -1,0 +1,10 @@
+{
+  "appName": {
+    "message": "Reef for Browsers",
+    "description": "The name of the extension"
+  },
+  "appDescription": {
+    "message": "Search, bookmark, and automate any page. Library of bookmarks, snippets, notes, and a tab-wide finder — all client-side.",
+    "description": "Description of the extension"
+  }
+}

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reef for Browsers</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <div class="brand">
+        <img class="logo" src="reef-logo.png" alt="Reef">
+        <span class="title">Reef</span>
+      </div>
+      <div class="header-actions">
+        <span id="manifest-badge" class="badge">Dynamic Extract</span>
+        <button id="btn-options" class="icon-btn" title="Settings">⚙️</button>
+      </div>
+    </header>
+
+    <nav id="mode-tabs" class="mode-tabs" role="tablist">
+      <button class="mode-tab active" data-mode="page" role="tab" aria-selected="true">Page</button>
+      <button class="mode-tab" data-mode="tabs" role="tab" aria-selected="false">Tabs</button>
+      <button class="mode-tab" data-mode="library" role="tab" aria-selected="false">Library</button>
+    </nav>
+
+    <!-- ─── PAGE MODE ─── -->
+    <section class="mode-panel" data-panel="page">
+      <div class="search-box-wrapper">
+        <input type="text" id="search-input" placeholder="Search page sections, actions, fields..." autofocus autocomplete="off" />
+        <button id="btn-clear" class="clear-btn hidden">&times;</button>
+      </div>
+
+      <div id="filter-tabs" class="filter-tabs">
+        <button class="tab-btn active" data-type="all">All</button>
+        <button class="tab-btn" data-type="section">Sections</button>
+        <button class="tab-btn" data-type="action">Actions</button>
+        <button class="tab-btn" data-type="field">Fields</button>
+        <button class="tab-btn" data-type="link">Links</button>
+        <button class="tab-btn" data-type="file">Files</button>
+      </div>
+
+      <main id="results-container" class="results-container">
+        <div class="loading-state">Indexing current page...</div>
+      </main>
+    </section>
+
+    <!-- ─── TABS MODE ─── -->
+    <section class="mode-panel hidden" data-panel="tabs">
+      <div class="search-box-wrapper">
+        <input type="text" id="tab-search-input" placeholder="Search across all open tabs..." autocomplete="off" />
+        <button id="tab-search-clear" class="clear-btn hidden">&times;</button>
+      </div>
+
+      <main id="tabs-container" class="results-container">
+        <div class="loading-state">Loading tabs...</div>
+      </main>
+    </section>
+
+    <!-- ─── LIBRARY MODE ─── -->
+    <section class="mode-panel hidden" data-panel="library">
+      <div class="search-box-wrapper">
+        <input type="text" id="library-search-input" placeholder="Search your library..." autocomplete="off" />
+        <button id="library-search-clear" class="clear-btn hidden">&times;</button>
+      </div>
+
+      <div id="library-tabs" class="filter-tabs">
+        <button class="tab-btn active" data-lib="bookmarks">Bookmarks</button>
+        <button class="tab-btn" data-lib="snippets">Snippets</button>
+        <button class="tab-btn" data-lib="notes">Notes</button>
+        <button class="tab-btn" data-lib="recents">Recent</button>
+      </div>
+
+      <main id="library-container" class="results-container">
+        <div class="empty-state">Loading library…</div>
+      </main>
+    </section>
+
+    <footer class="popup-footer">
+      <span id="stats-label">0 items found</span>
+      <span class="shortcut-tip">Cmd+Shift+R</span>
+    </footer>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
