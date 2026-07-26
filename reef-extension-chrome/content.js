@@ -2156,6 +2156,34 @@
             sendResponse({ success: true });
             return;
           }
+          if (message.type === "EXTRACT_LINKS") {
+            const url = location.href;
+            const html = document.documentElement.outerHTML;
+            const opts = message.options || {};
+            let links = extractLinks(html, url);
+            if (opts.includeFiles) {
+              links = links.concat(extractFiles(html, url, opts.fileExtensions));
+            }
+            const origin = window.location.origin;
+            links = links.map((link) => ({
+              url: link.url,
+              text: link.headingText,
+              isExternal: !link.url.startsWith(origin),
+              type: link.type
+            }));
+            if (opts.internalOnly) links = links.filter((l) => !l.isExternal);
+            if (opts.externalOnly) links = links.filter((l) => l.isExternal);
+            if (opts.uniqueByUrl) {
+              const seen = /* @__PURE__ */ new Set();
+              links = links.filter((l) => {
+                if (seen.has(l.url)) return false;
+                seen.add(l.url);
+                return true;
+              });
+            }
+            sendResponse({ success: true, links, pageUrl: url, pageTitle: document.title });
+            return;
+          }
           sendResponse({ success: false, error: "unsupported-message-type" });
         } catch (err) {
           sendResponse({ success: false, error: err?.message || String(err) });

@@ -714,6 +714,51 @@ function searchSections(query, index, limitOrOptions) {
   if (!q) {
     return index.allSections.slice(0, limit);
   }
+  if (options?.regex) {
+    let re;
+    try {
+      re = new RegExp(q, options.regexFlags ?? "i");
+    } catch (err) {
+      return [];
+    }
+    const regexMatches = [];
+    for (const record of index.allSections) {
+      if (options?.filter && !options.filter(record)) continue;
+      let headingMatch = null;
+      let bodyMatch = null;
+      try {
+        re.lastIndex = 0;
+        headingMatch = re.exec(record.headingText);
+        re.lastIndex = 0;
+        bodyMatch = !headingMatch ? re.exec(record.bodyText) : null;
+      } catch {
+        continue;
+      }
+      if (!headingMatch && !bodyMatch) continue;
+      const key = headingMatch ? "headingText" : "bodyText";
+      const m = headingMatch || bodyMatch;
+      regexMatches.push({
+        record,
+        score: 1,
+        matches: [{ key, start: m.index, end: m.index + m[0].length }]
+      });
+    }
+    let sorted = regexMatches;
+    if (options?.sortFn) {
+      sorted = [...sorted].sort(
+        (a, b) => options.sortFn({ record: a.record, score: a.score, matches: a.matches }, { record: b.record, score: b.score, matches: b.matches })
+      );
+    }
+    const top = sorted.slice(0, limit);
+    if (options?.includeScore || options?.includeMatches) {
+      return top.map((entry) => ({
+        record: entry.record,
+        score: entry.score,
+        matches: options.includeMatches ? entry.matches : void 0
+      }));
+    }
+    return top.map((entry) => entry.record);
+  }
   const normalizedQ = q.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const scores = /* @__PURE__ */ new Map();
   const matches = /* @__PURE__ */ new Map();
@@ -2358,7 +2403,8 @@ var KEY = {
   bookmarks: "reef.bookmarks",
   snippets: "reef.snippets",
   pageNotes: "reef.pageNotes",
-  recents: "reef.recents"
+  recents: "reef.recents",
+  savedSearches: "reef.savedSearches"
 };
 function genId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -2461,6 +2507,55 @@ async function deletePageNote(url) {
   if (next.length === all.length) return false;
   await setArray(KEY.pageNotes, next);
   return true;
+}
+async function listSavedSearches(query = "") {
+  const all = await getArray(KEY.savedSearches);
+  all.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  if (!query) return all;
+  const q = query.toLowerCase();
+  return all.filter(
+    (s) => s.name.toLowerCase().includes(q) || s.query.toLowerCase().includes(q)
+  );
+}
+async function createSavedSearch(input) {
+  const now = Date.now();
+  const savedSearch = {
+    id: genId(),
+    name: input.name || input.query,
+    query: input.query,
+    searchOptions: input.searchOptions || {},
+    createdAt: now,
+    updatedAt: now,
+    lastRunAt: null,
+    runCount: 0
+  };
+  const all = await getArray(KEY.savedSearches);
+  all.unshift(savedSearch);
+  await setArray(KEY.savedSearches, all);
+  return savedSearch;
+}
+async function updateSavedSearch(id, patch) {
+  const all = await getArray(KEY.savedSearches);
+  const idx = all.findIndex((s) => s.id === id);
+  if (idx < 0) return null;
+  all[idx] = { ...all[idx], ...patch, id, updatedAt: Date.now() };
+  await setArray(KEY.savedSearches, all);
+  return all[idx];
+}
+async function deleteSavedSearch(id) {
+  const all = await getArray(KEY.savedSearches);
+  const next = all.filter((s) => s.id !== id);
+  if (next.length === all.length) return false;
+  await setArray(KEY.savedSearches, next);
+  return true;
+}
+async function touchSavedSearch(id) {
+  const all = await getArray(KEY.savedSearches);
+  const idx = all.findIndex((s) => s.id === id);
+  if (idx < 0) return null;
+  all[idx] = { ...all[idx], lastRunAt: Date.now(), runCount: (all[idx].runCount || 0) + 1 };
+  await setArray(KEY.savedSearches, all);
+  return all[idx];
 }
 var RECENT_MAX = 30;
 async function listRecents() {
@@ -2888,6 +2983,67 @@ async function listOpenTabs() {
   }
   return { items };
 }
+function normalizeUrlForDuplicateCheck(url) {
+  try {
+    const parsed = new URL(url);
+    parsed.hash = "";
+    const stripParams = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "fbclid", "gclid"];
+    for (const p of stripParams) parsed.searchParams.delete(p);
+    let pathname = parsed.pathname;
+    if (pathname.length > 1 && pathname.endsWith("/")) pathname = pathname.slice(0, -1);
+    return `${parsed.origin}${pathname}${parsed.search}`;
+  } catch {
+    return url;
+  }
+}
+async function findDuplicateTabs() {
+  if (typeof chrome === "undefined" || !chrome.tabs) return { groups: [] };
+  const tabs = await chrome.tabs.query({});
+  const groupsByKey = /* @__PURE__ */ new Map();
+  for (const tab of tabs) {
+    if (!tab.id || !tab.url) continue;
+    if (tab.url.startsWith("chrome://") || tab.url.startsWith("about:") || tab.url.startsWith("moz-extension:")) continue;
+    const key = normalizeUrlForDuplicateCheck(tab.url);
+    const list = groupsByKey.get(key) ?? [];
+    list.push({
+      tabId: tab.id,
+      title: tab.title || tab.url,
+      url: tab.url,
+      favIconUrl: tab.favIconUrl || "",
+      windowId: tab.windowId,
+      active: !!tab.active,
+      index: tab.index ?? 0
+    });
+    groupsByKey.set(key, list);
+  }
+  const groups = [];
+  for (const [key, list] of groupsByKey) {
+    if (list.length > 1) {
+      list.sort((a, b) => a.index - b.index);
+      groups.push({ key, tabs: list });
+    }
+  }
+  groups.sort((a, b) => b.tabs.length - a.tabs.length);
+  return { groups };
+}
+async function closeDuplicateTabs(keepStrategy = "first-active") {
+  const { groups } = await findDuplicateTabs();
+  const idsToClose = [];
+  for (const group of groups) {
+    let keepIndex = 0;
+    if (keepStrategy === "keep-active") {
+      const activeIdx = group.tabs.findIndex((t) => t.active);
+      if (activeIdx >= 0) keepIndex = activeIdx;
+    }
+    group.tabs.forEach((tab, idx) => {
+      if (idx !== keepIndex) idsToClose.push(tab.tabId);
+    });
+  }
+  if (idsToClose.length && chrome.tabs?.remove) {
+    await chrome.tabs.remove(idsToClose);
+  }
+  return { closedCount: idsToClose.length, closedTabIds: idsToClose };
+}
 if (typeof chrome !== "undefined" && chrome.runtime?.onMessage) {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     (async () => {
@@ -3145,6 +3301,79 @@ if (typeof chrome !== "undefined" && chrome.runtime?.onMessage) {
             success: true,
             items: result.items
           });
+          return;
+        }
+        if (message.type === "FIND_DUPLICATE_TABS") {
+          const result = await findDuplicateTabs();
+          sendResponse({ success: true, groups: result.groups });
+          return;
+        }
+        if (message.type === "CLOSE_DUPLICATE_TABS") {
+          const result = await closeDuplicateTabs(message.keepStrategy || "first-active");
+          sendResponse({ success: true, closedCount: result.closedCount, closedTabIds: result.closedTabIds });
+          return;
+        }
+        if (message.type === "SAVED_SEARCH_LIST") {
+          sendResponse({ success: true, items: await listSavedSearches(message.query || "") });
+          return;
+        }
+        if (message.type === "SAVED_SEARCH_CREATE") {
+          const saved = await createSavedSearch(message.data);
+          sendResponse({ success: true, item: saved });
+          return;
+        }
+        if (message.type === "SAVED_SEARCH_UPDATE") {
+          const item = await updateSavedSearch(message.id, message.data || {});
+          sendResponse({ success: !!item, item });
+          return;
+        }
+        if (message.type === "SAVED_SEARCH_DELETE") {
+          sendResponse({ success: await deleteSavedSearch(message.id) });
+          return;
+        }
+        if (message.type === "SAVED_SEARCH_RUN") {
+          const saved = (await listSavedSearches()).find((s) => s.id === message.id);
+          if (!saved) {
+            sendResponse({ success: false, error: "saved-search-not-found" });
+            return;
+          }
+          await touchSavedSearch(message.id);
+          const tabId = message.tabId || sender.tab?.id;
+          if (!tabId) {
+            sendResponse({ success: false, error: "no-tab-id" });
+            return;
+          }
+          const state = await getOrFetchTabIndex(tabId, message.forceRefresh);
+          if (!state) {
+            sendResponse({ success: false, error: "failed-to-index-tab" });
+            return;
+          }
+          const searchOptions = { ...saved.searchOptions, limit: message.limit || saved.searchOptions?.limit || 20 };
+          const paginated = searchWithPagination(saved.query, state.index, searchOptions);
+          sendResponse({
+            success: true,
+            query: saved.query,
+            results: paginated.results.map((sr) => sr.record ?? sr),
+            total: paginated.total,
+            hasMore: paginated.hasMore
+          });
+          return;
+        }
+        if (message.type === "EXTRACT_LINKS_FOR_TAB") {
+          const tabId = message.tabId || sender.tab?.id;
+          if (!tabId) {
+            sendResponse({ success: false, error: "no-tab-id" });
+            return;
+          }
+          try {
+            const response = await chrome.tabs.sendMessage(tabId, {
+              type: "EXTRACT_LINKS",
+              options: message.options || {}
+            });
+            sendResponse(response);
+          } catch (err) {
+            sendResponse({ success: false, error: err?.message || String(err) });
+          }
           return;
         }
         sendResponse({ success: false, error: "unsupported-background-message" });
